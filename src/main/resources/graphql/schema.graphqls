@@ -1,0 +1,169 @@
+type Query {
+    # ─── Patient ────────────────────────────────────────────────────────────────
+    getPatient(id: ID!): Patient
+    getAllPatients(page: Int, size: Int): PatientPage
+
+    # ─── Doctor ─────────────────────────────────────────────────────────────────
+    getDoctor(id: ID!): Doctor
+    getAllDoctors(page: Int, size: Int): DoctorPage
+    getDoctorsByDepartment(departmentId: ID!): [Doctor]
+
+    # ─── Department ─────────────────────────────────────────────────────────────
+    getDepartment(id: ID!): Department
+    getAllDepartments: [Department]
+
+    # ─── Appointment ────────────────────────────────────────────────────────────
+    getAppointment(id: ID!): Appointment
+    getAllAppointments(page: Int, size: Int): AppointmentPage
+    getAppointmentsByPatient(patientId: ID!, page: Int, size: Int): AppointmentPage
+    getAppointmentsByDoctor(doctorId: ID!, page: Int, size: Int): AppointmentPage
+}
+
+type Mutation {
+    # ─── Patient ────────────────────────────────────────────────────────────────
+    createPatient(input: PatientInput!): Patient
+    updatePatient(id: ID!, input: PatientInput!): Patient
+    deletePatient(id: ID!): Boolean
+
+    # ─── Doctor ─────────────────────────────────────────────────────────────────
+    createDoctor(input: DoctorInput!): Doctor
+    updateDoctor(id: ID!, input: DoctorInput!): Doctor
+    deleteDoctor(id: ID!): Boolean
+
+    # ─── Department ─────────────────────────────────────────────────────────────
+    createDepartment(input: DepartmentInput!): Department
+    updateDepartment(id: ID!, input: DepartmentInput!): Department
+    deleteDepartment(id: ID!): Boolean
+
+    # ─── Appointment ────────────────────────────────────────────────────────────
+    createAppointment(input: AppointmentInput!): Appointment
+    updateAppointmentStatus(id: ID!, status: String!): Appointment
+    cancelAppointment(id: ID!): Boolean
+}
+
+# ─── Types ──────────────────────────────────────────────────────────────────────
+
+type Patient {
+    id: ID!
+    firstName: String!
+    lastName: String!
+    email: String!
+    phone: String
+    dateOfBirth: String
+    gender: String
+    bloodType: String
+    address: String
+    emergencyContactName: String
+    emergencyContactPhone: String
+    medicalHistory: String
+    createdAt: String
+    updatedAt: String
+}
+
+type Doctor {
+    id: ID!
+    firstName: String!
+    lastName: String!
+    email: String!
+    phone: String
+    gender: String
+    specialization: String
+    licenseNumber: String
+    yearsOfExperience: Int
+    dateOfBirth: String
+    departmentId: ID!
+    departmentName: String
+    createdAt: String
+    updatedAt: String
+}
+
+type Department {
+    id: ID!
+    name: String!
+    description: String
+    headOfDepartment: String
+    doctorCount: Int
+    createdAt: String
+    updatedAt: String
+}
+
+type Appointment {
+    id: ID!
+    patientId: ID!
+    patientFullName: String
+    doctorId: ID!
+    doctorFullName: String
+    departmentName: String
+    appointmentDateTime: String!
+    status: String!
+    reason: String
+    notes: String
+    createdAt: String
+    updatedAt: String
+}
+
+# ─── Page wrappers ──────────────────────────────────────────────────────────────
+
+type PatientPage {
+    content: [Patient]
+    totalElements: Int
+    totalPages: Int
+    currentPage: Int
+}
+
+type DoctorPage {
+    content: [Doctor]
+    totalElements: Int
+    totalPages: Int
+    currentPage: Int
+}
+
+type AppointmentPage {
+    content: [Appointment]
+    totalElements: Int
+    totalPages: Int
+    currentPage: Int
+}
+
+# ─── Input Types ────────────────────────────────────────────────────────────────
+
+input PatientInput {
+    firstName: String!
+    lastName: String!
+    email: String!
+    phone: String
+    dateOfBirth: String
+    gender: String
+    bloodType: String
+    address: String
+    emergencyContactName: String
+    emergencyContactPhone: String
+    medicalHistory: String
+}
+
+input DoctorInput {
+    firstName: String!
+    lastName: String!
+    email: String!
+    phone: String
+    gender: String
+    specialization: String!
+    licenseNumber: String!
+    yearsOfExperience: Int
+    dateOfBirth: String
+    departmentId: ID!
+}
+
+input DepartmentInput {
+    name: String!
+    description: String
+    headOfDepartment: String
+}
+
+input AppointmentInput {
+    patientId: ID!
+    doctorId: ID!
+    appointmentDateTime: String!
+    reason: String
+    notes: String
+}
