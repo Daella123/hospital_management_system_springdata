@@ -3,6 +3,9 @@ package com.daella.hospital_management_system.exception;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -68,6 +71,28 @@ public class GlobalExceptionHandler {
         String msg = String.format("Parameter '%s' should be of type '%s'",
                 ex.getName(), ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown");
         return build(HttpStatus.BAD_REQUEST, "Type Mismatch", msg, null);
+    }
+
+    // ── 401 Bad Credentials ──────────────────────────────────────────────────
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
+        return build(HttpStatus.UNAUTHORIZED, "Unauthorized", "Invalid email or password", null);
+    }
+
+    // ── 401 Authentication ───────────────────────────────────────────────────
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthentication(AuthenticationException ex) {
+        return build(HttpStatus.UNAUTHORIZED, "Unauthorized", ex.getMessage(), null);
+    }
+
+    // ── 403 Forbidden ────────────────────────────────────────────────────────
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+        return build(HttpStatus.FORBIDDEN, "Forbidden",
+                "You do not have permission to access this resource", null);
     }
 
     // ── 500 Generic ──────────────────────────────────────────────────────────
