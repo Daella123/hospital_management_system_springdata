@@ -8,6 +8,7 @@ import com.daella.hospital_management_system.enums.AppointmentStatus;
 import com.daella.hospital_management_system.service.AppointmentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
@@ -15,6 +16,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -41,9 +43,11 @@ public class AppointmentController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN','RECEPTIONIST')")
     @Operation(
             summary = "Schedule a new appointment",
-            description = "Books an appointment. Rolls back if: doctor/patient not found, or the slot is already taken."
+            description = "Books an appointment. Rolls back if: doctor/patient not found, or the slot is already taken.",
+            security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<ApiResponse<AppointmentResponse>> create(@Valid @RequestBody AppointmentRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -115,7 +119,8 @@ public class AppointmentController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Update an appointment")
+    @PreAuthorize("hasAnyRole('ADMIN','RECEPTIONIST')")
+    @Operation(summary = "Update an appointment", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<AppointmentResponse>> update(
             @PathVariable Long id, @Valid @RequestBody AppointmentRequest request) {
         return ResponseEntity.ok(
@@ -123,7 +128,8 @@ public class AppointmentController {
     }
 
     @PatchMapping("/{id}/status")
-    @Operation(summary = "Update appointment status")
+    @PreAuthorize("hasAnyRole('ADMIN','RECEPTIONIST','DOCTOR')")
+    @Operation(summary = "Update appointment status", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<AppointmentResponse>> updateStatus(
             @PathVariable Long id, @RequestParam AppointmentStatus status) {
         return ResponseEntity.ok(
@@ -131,9 +137,11 @@ public class AppointmentController {
     }
 
     @PatchMapping("/{id}/cancel")
+    @PreAuthorize("hasAnyRole('ADMIN','RECEPTIONIST')")
     @Operation(
             summary = "Cancel an appointment",
-            description = "Rolls back if the appointment is already COMPLETED."
+            description = "Rolls back if the appointment is already COMPLETED.",
+            security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<ApiResponse<Void>> cancel(@PathVariable Long id) {
         appointmentService.cancelAppointment(id);
@@ -141,7 +149,8 @@ public class AppointmentController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete an appointment")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Delete an appointment", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         appointmentService.cancelAppointment(id);
         return ResponseEntity.ok(ApiResponse.success("Appointment deleted", null));

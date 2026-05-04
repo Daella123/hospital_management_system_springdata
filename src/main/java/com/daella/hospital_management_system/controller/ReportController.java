@@ -8,8 +8,10 @@ import com.daella.hospital_management_system.dto.response.PrescriptionStatsRespo
 import com.daella.hospital_management_system.service.ReportService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -33,7 +35,8 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/reports")
-@Tag(name = "Reports", description = "Operational reports backed by native SQL aggregations")
+@PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
+@Tag(name = "Reports", description = "Operational reports backed by native SQL aggregations — ADMIN & DOCTOR only")
 public class ReportController {
 
     private final ReportService reportService;

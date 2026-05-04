@@ -7,12 +7,14 @@ import com.daella.hospital_management_system.dto.response.PatientResponse;
 import com.daella.hospital_management_system.service.PatientService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -37,7 +39,8 @@ public class PatientController {
     }
 
     @PostMapping
-    @Operation(summary = "Register a new patient")
+    @PreAuthorize("hasAnyRole('ADMIN','RECEPTIONIST')")
+    @Operation(summary = "Register a new patient", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<PatientResponse>> create(@Valid @RequestBody PatientRequest request) {
         PatientResponse body = patientService.createPatient(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -45,9 +48,11 @@ public class PatientController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Get patient by ID",
-            description = "Result is cached in the 'patients' cache. Subsequent calls with the same ID are served from memory."
+            description = "Result is cached in the 'patients' cache. Subsequent calls with the same ID are served from memory.",
+            security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<ApiResponse<PatientResponse>> getById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(patientService.getPatientById(id)));
@@ -88,9 +93,11 @@ public class PatientController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','RECEPTIONIST')")
     @Operation(
             summary = "Update a patient's information",
-            description = "Updates the patient and refreshes the 'patients' cache entry for this ID."
+            description = "Updates the patient and refreshes the 'patients' cache entry for this ID.",
+            security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<ApiResponse<PatientResponse>> update(
             @PathVariable Long id, @Valid @RequestBody PatientRequest request) {
@@ -99,9 +106,11 @@ public class PatientController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(
             summary = "Delete a patient",
-            description = "Deletes the patient and evicts the 'patients' cache entry for this ID."
+            description = "Deletes the patient and evicts the 'patients' cache entry for this ID.",
+            security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         patientService.deletePatient(id);

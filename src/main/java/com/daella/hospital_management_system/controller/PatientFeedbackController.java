@@ -5,6 +5,7 @@ import com.daella.hospital_management_system.dto.response.ApiResponse;
 import com.daella.hospital_management_system.dto.response.PatientFeedbackResponse;
 import com.daella.hospital_management_system.service.PatientFeedbackService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -26,7 +28,8 @@ public class PatientFeedbackController {
     }
 
     @PostMapping
-    @Operation(summary = "Submit patient feedback")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Submit patient feedback", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<PatientFeedbackResponse>> create(
             @Valid @RequestBody PatientFeedbackRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -84,7 +87,8 @@ public class PatientFeedbackController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete a feedback entry")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Delete a feedback entry", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         feedbackService.deleteFeedback(id);
         return ResponseEntity.ok(ApiResponse.success("Feedback deleted", null));

@@ -5,10 +5,12 @@ import com.daella.hospital_management_system.dto.response.ApiResponse;
 import com.daella.hospital_management_system.dto.response.PrescriptionResponse;
 import com.daella.hospital_management_system.service.PrescriptionService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,7 +27,8 @@ public class PrescriptionController {
     }
 
     @PostMapping
-    @Operation(summary = "Create a prescription for an appointment")
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
+    @Operation(summary = "Create a prescription for an appointment", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<PrescriptionResponse>> create(@Valid @RequestBody PrescriptionRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Prescription created", prescriptionService.createPrescription(request)));
@@ -51,7 +54,8 @@ public class PrescriptionController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Update a prescription")
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
+    @Operation(summary = "Update a prescription", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<PrescriptionResponse>> update(
             @PathVariable Long id, @Valid @RequestBody PrescriptionRequest request) {
         return ResponseEntity.ok(
@@ -59,7 +63,8 @@ public class PrescriptionController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete a prescription")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Delete a prescription", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         prescriptionService.deletePrescription(id);
         return ResponseEntity.ok(ApiResponse.success("Prescription deleted", null));
