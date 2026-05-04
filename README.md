@@ -1,6 +1,6 @@
-# Hospital Management System — Spring Data JPA Lab
+# Hospital Management System — Spring Security Lab
 
-> **Module 6 — Spring Data JPA** continuation of the Spring Web (Module 5) lab.
+> **Module 7 — Spring Security** continuation of the Spring Data JPA (Module 6) lab.
 
 ---
 
@@ -9,13 +9,18 @@
 A fully layered Spring Boot backend that manages patients, doctors, departments,
 appointments, prescriptions, patient feedback, and medical inventory.
 
-This module adds:
-- Spring Data JPA repositories with derived queries, JPQL, and native SQL
-- Pagination and sorting on all major list endpoints
-- Explicit transaction management with propagation, isolation, and rollback scenarios
-- Spring Cache (`@EnableCaching`) with `@Cacheable`, `@CachePut`, `@CacheEvict`
-- Database indexes on frequently queried columns
-- Operational reporting endpoints backed by native SQL aggregations
+This module adds **complete Spring Security** on top of the existing Spring Data JPA layer:
+- JWT-based authentication (HMAC-SHA256)
+- Google OAuth2 login
+- Role-Based Access Control (ADMIN · DOCTOR · NURSE · RECEPTIONIST)
+- BCrypt password hashing
+- Stateless session management
+- CORS configuration
+- CSRF disabled (explained below)
+- Token blacklist (DSA: ConcurrentHashMap)
+- Security event logging
+- OpenAPI/Swagger with JWT Authorize button
+- Admin security audit report endpoint
 
 ---
 
@@ -361,3 +366,328 @@ GET /api/v1/reports/low-stock
 | 5 | Performance Report             | ✅ Documented above |
 | 6 | Updated API Documentation      | ✅ Swagger UI with caching/transaction descriptions |
 | 7 | README File                    | ✅ This file |
+
+---
+
+---
+
+# 🔐 Spring Security Module
+
+---
+
+## Technology Stack (Security additions)
+
+| Area                 | Technology                                      |
+|----------------------|-------------------------------------------------|
+| Authentication       | Spring Security + JWT (HMAC-SHA256, JJWT 0.12.6) |
+| OAuth2 Login         | Spring OAuth2 Client — Google provider          |
+| Password Hashing     | BCryptPasswordEncoder                           |
+| Authorization        | Role-Based Access Control (`@PreAuthorize`)     |
+| Session Strategy     | Stateless (no HTTP session)                     |
+| Token Revocation     | ConcurrentHashMap-based blacklist               |
+| Security Logging     | SLF4J via SecurityEventLogger                   |
+| API Docs             | Springdoc OpenAPI with JWT Bearer Authorize     |
+
+---
+
+## New Entities
+
+| Entity | Table       | Purpose                                          |
+|--------|-------------|--------------------------------------------------|
+| `User` | `users`     | App user — supports LOCAL and GOOGLE providers   |
+| `Role` | `roles`     | Role record — ADMIN, DOCTOR, NURSE, RECEPTIONIST |
+
+Join table `user_roles` (many-to-many).
+
+---
+
+## Authentication Endpoints
+
+| Method | Path              | Auth Required | Description                         |
+|--------|-------------------|---------------|-------------------------------------|
+| POST   | `/auth/register`  | ❌ Public     | Register new user (default: RECEPTIONIST) |
+| POST   | `/auth/login`     | ❌ Public     | Login → returns JWT token           |
+| GET    | `/auth/me`        | ✅ Bearer JWT | Get current user profile            |
+| POST   | `/auth/logout`    | ✅ Bearer JWT | Blacklist token (revoke)            |
+
+---
+
+## How JWT Authentication Works
+
+```
+1. Client → POST /auth/login { email, password }
+2. Server validates credentials via AuthenticationManager
+3. Server generates JWT (HMAC-SHA256 signed, contains email + roles + expiry)
+4. Client stores JWT and sends it on every request:
+       Authorization: Bearer <token>
+5. JwtAuthenticationFilter intercepts every request:
+   a. Extracts token from header
+   b. Checks token against blacklist (ConcurrentHashMap lookup)
+   c. Validates signature + expiry via JwtService
+   d. Loads user from DB (CustomUserDetailsService)
+   e. Sets SecurityContext → request is authenticated
+6. @PreAuthorize annotations check roles before controller methods execute
+```
+
+**Token lifetime:** 24 hours (configurable via `app.jwt.expiration-ms`)
+
+---
+
+## How Google OAuth2 Login Works
+
+```
+1. Browser → GET /oauth2/authorization/google
+2. Google prompts for consent
+3. Google → redirects to /login/oauth2/code/google with auth code
+4. OAuth2SuccessHandler fires:
+   a. Extracts email + name from Google profile
+   b. Finds existing user by email, OR creates new user (RECEPTIONIST role)
+   c. Issues a JWT token
+   d. Redirects to: http://localhost:3000/oauth2/callback?token=<jwt>
+5. Frontend stores token and uses it as Bearer on all requests
+```
+
+> ⚠️ You must configure real credentials in `application-dev.yml`:
+> ```yaml
+> spring.security.oauth2.client.registration.google:
+>   client-id: YOUR_GOOGLE_CLIENT_ID
+>   client-secret: YOUR_GOOGLE_CLIENT_SECRET
+> ```
+> Get credentials from: https://console.cloud.google.com/apis/credentials
+
+---
+
+## Role-Based Access Control (RBAC)
+
+### Roles
+
+| Role           | Access Level                                                    |
+|----------------|-----------------------------------------------------------------|
+| `ADMIN`        | Full access to all endpoints + admin security report           |
+| `DOCTOR`       | Read all; write prescriptions; update appointment status; reports |
+| `NURSE`        | Read all; write/adjust medical inventory                        |
+| `RECEPTIONIST` | Register/update patients; schedule/cancel appointments; read all |
+
+### Endpoint Permissions
+
+| Resource             | GET (read) | POST/PUT (write) | PATCH (update) | DELETE      |
+|----------------------|------------|------------------|----------------|-------------|
+| `/api/v1/patients`   | All auth   | ADMIN, RECEPTIONIST | ADMIN, RECEPTIONIST | ADMIN   |
+| `/api/v1/doctors`    | All auth   | ADMIN            | ADMIN          | ADMIN       |
+| `/api/v1/departments`| All auth   | ADMIN            | ADMIN          | ADMIN       |
+| `/api/v1/appointments`| All auth  | ADMIN, RECEPTIONIST | ADMIN, RECEPTIONIST, DOCTOR | ADMIN |
+| `/api/v1/prescriptions`| All auth | ADMIN, DOCTOR    | ADMIN, DOCTOR  | ADMIN       |
+| `/api/v1/inventory`  | All auth   | ADMIN, NURSE     | ADMIN, NURSE   | ADMIN       |
+| `/api/v1/feedbacks`  | All auth   | All auth         | —              | ADMIN       |
+| `/api/v1/reports`    | ADMIN, DOCTOR | —             | —              | —           |
+| `/api/v1/admin/**`   | ADMIN only | ADMIN only       | —              | —           |
+
+---
+
+## CORS Configuration
+
+**CORS (Cross-Origin Resource Sharing)** is a browser mechanism that restricts which
+external origins can make requests to your API.
+
+- Allowed origins are configured in `app.cors.allowed-origins` (comma-separated)
+- Default: `http://localhost:3000`, `http://localhost:4200`, `http://localhost:8080`
+- Allowed methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
+- Allowed headers: Authorization, Content-Type, Accept
+- Credentials: allowed (needed for cookies/auth headers)
+
+> Postman and server-to-server calls are **not** restricted by CORS — it is browser-only.
+
+---
+
+## CSRF Configuration & Explanation
+
+**CSRF (Cross-Site Request Forgery)** attacks trick a browser into submitting requests
+using the user's existing authenticated session (cookies).
+
+| Mechanism | CORS                                     | CSRF                                          |
+|-----------|------------------------------------------|-----------------------------------------------|
+| Purpose   | Controls which origins can access API    | Prevents forged requests using session cookies |
+| Applies to| Browser fetch/XHR calls                  | Browser form submissions with session cookies  |
+
+**Why CSRF is disabled here:**
+
+This API is **stateless** — no cookies, no sessions. Clients send the JWT manually in
+the `Authorization` header. Since CSRF attacks rely on automatic cookie sending by the
+browser, they are not applicable when tokens are sent explicitly in headers.
+
+**When to enable CSRF:**
+- Server-rendered HTML forms (Thymeleaf, JSP)
+- Session-based (cookie) authentication
+- Any traditional web app that uses cookie sessions
+
+---
+
+## DSA Concepts in Security
+
+### 1. BCrypt Hashing
+Passwords are stored as BCrypt hashes (cost factor 10 by default).
+BCrypt is a one-way adaptive hashing function — it cannot be reversed, and
+increasing the cost factor makes brute-force attacks exponentially slower.
+
+```java
+// Store:
+user.setPassword(passwordEncoder.encode(rawPassword)); // → $2a$10$...
+
+// Verify:
+passwordEncoder.matches(rawPassword, storedHash); // → true/false
+```
+
+### 2. JWT Signature Verification
+JWT tokens are signed with HMAC-SHA256. On every request:
+- The server recomputes the HMAC signature using its secret key
+- Compares with the signature in the token
+- Any tampering → signature mismatch → 401 Unauthorized
+- Time complexity: O(1) — no DB call needed for validation
+
+### 3. Token Blacklist — ConcurrentHashMap
+When a user logs out, the JWT is added to a `ConcurrentHashMap<String, LocalDateTime>`:
+
+```java
+// O(1) average insert
+blacklistedTokens.put(token, expiresAt);
+
+// O(1) average lookup — checked on every request
+blacklistedTokens.containsKey(token);
+```
+
+A scheduled task runs every 30 minutes and removes entries whose expiry has passed,
+keeping memory bounded.
+
+---
+
+## Security Event Logging
+
+The following events are logged via `SecurityEventLogger` using SLF4J:
+
+| Event                   | Log Level | Example                                        |
+|-------------------------|-----------|------------------------------------------------|
+| Login success           | INFO      | `[SECURITY] LOGIN SUCCESS — user='a@b.com'`   |
+| Login failure           | WARN      | `[SECURITY] LOGIN FAILED — user='a@b.com'`    |
+| Logout / blacklist      | INFO      | `[SECURITY] LOGOUT — user='a@b.com' token blacklisted` |
+| Unauthorized access     | WARN      | `[SECURITY] UNAUTHORIZED ACCESS — uri='/api/v1/patients'` |
+| Token expired           | WARN      | `[SECURITY] TOKEN EXPIRED — uri='/api/v1/doctors'` |
+| Blacklisted token reuse | WARN      | `[SECURITY] BLACKLISTED TOKEN USED — uri='...'` |
+
+Admin security statistics are available at:
+```
+GET /api/v1/admin/security-report    (ADMIN only)
+GET /api/v1/admin/blacklist-size     (ADMIN only)
+```
+
+---
+
+## Testing with Postman
+
+### Step 1 — Seed roles (run once via SQL or first startup)
+The application will auto-create the `roles` table. Seed the 4 roles:
+```sql
+INSERT INTO roles (name) VALUES ('ADMIN'), ('DOCTOR'), ('NURSE'), ('RECEPTIONIST')
+ON CONFLICT DO NOTHING;
+```
+
+### Step 2 — Register a user
+```http
+POST /auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Admin",
+  "lastName": "User",
+  "email": "admin@hospital.com",
+  "password": "securePass123",
+  "role": "ADMIN"
+}
+```
+
+### Step 3 — Login
+```http
+POST /auth/login
+Content-Type: application/json
+
+{ "email": "admin@hospital.com", "password": "securePass123" }
+```
+Response:
+```json
+{ "token": "eyJhbGciOiJIUzI1NiJ9...", "type": "Bearer", "roles": ["ADMIN"] }
+```
+
+### Step 4 — Use JWT token
+Copy the token. In Postman: **Authorization → Bearer Token → paste token**
+
+### Step 5 — Access secured endpoint
+```http
+GET /api/v1/patients
+Authorization: Bearer <your-token>
+```
+→ 200 OK with patient list
+
+### Step 6 — Access without token
+```http
+GET /api/v1/patients
+```
+→ 401 Unauthorized
+
+### Step 7 — Access with wrong role
+```http
+POST /api/v1/doctors    (using a RECEPTIONIST token)
+```
+→ 403 Forbidden
+
+### Step 8 — Logout (blacklist token)
+```http
+POST /auth/logout
+Authorization: Bearer <your-token>
+```
+
+### Step 9 — Reuse blacklisted token
+```http
+GET /auth/me
+Authorization: Bearer <same-token>
+```
+→ 401 Unauthorized — "Token has been revoked"
+
+### Step 10 — Test CORS (requires browser/frontend)
+Requests from `http://localhost:3000` → ✅ Allowed (in allowed-origins list)
+Requests from `http://evil.com` → ❌ Blocked by CORS
+
+---
+
+## Testing with Swagger UI
+
+1. Go to: http://localhost:8080/swagger-ui.html
+2. Expand `Authentication` → `POST /auth/login` → Execute → Copy token
+3. Click **Authorize** (top right) → enter token → **Authorize**
+4. All secured endpoints now show 🔒 and automatically include the token
+
+---
+
+## Environment Variables (Production)
+
+In production, override these via environment variables instead of hardcoding:
+
+| Variable                          | Description                    |
+|-----------------------------------|--------------------------------|
+| `APP_JWT_SECRET`                  | JWT signing secret (≥256 bit)  |
+| `APP_JWT_EXPIRATION_MS`           | Token lifetime in milliseconds |
+| `APP_CORS_ALLOWED_ORIGINS`        | Comma-separated frontend URLs  |
+| `SPRING_DATASOURCE_URL`           | PostgreSQL connection string   |
+| `SPRING_DATASOURCE_USERNAME`      | DB username                    |
+| `SPRING_DATASOURCE_PASSWORD`      | DB password                    |
+| `SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID`     | Google OAuth2 Client ID     |
+| `SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET` | Google OAuth2 Client Secret |
+
+---
+
+## Assumptions
+
+1. Roles must be seeded in the `roles` table before registration works.
+2. Google OAuth2 requires real credentials — the placeholders in config will fail.
+3. The JWT secret in `application-dev.yml` is for development only — change it in production.
+4. The token blacklist is in-memory — it resets on application restart. For production, use Redis.
+5. The OAuth2 redirect URL (`http://localhost:3000/oauth2/callback`) assumes a React/Angular frontend — adjust as needed.
+
