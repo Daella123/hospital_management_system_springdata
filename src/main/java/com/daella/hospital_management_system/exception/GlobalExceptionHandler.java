@@ -92,7 +92,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
         return build(HttpStatus.FORBIDDEN, "Forbidden",
-                "You do not have permission to access this resource", null);
+                "You are signed in, but your role does not allow this operation. "
+                        + "Each area of the API is restricted by role. "
+                        + "Ask an administrator if you need access.", null);
     }
 
     // ── 500 Generic ──────────────────────────────────────────────────────────

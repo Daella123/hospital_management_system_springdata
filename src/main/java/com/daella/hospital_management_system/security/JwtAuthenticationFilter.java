@@ -1,6 +1,7 @@
 package com.daella.hospital_management_system.security;
 
 import com.daella.hospital_management_system.logging.SecurityEventLogger;
+import org.springframework.http.HttpStatus;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -35,15 +36,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final CustomUserDetailsService userDetailsService;
     private final TokenBlacklistService blacklistService;
     private final SecurityEventLogger securityEventLogger;
+    private final SecurityErrorResponseWriter securityErrorResponseWriter;
 
     public JwtAuthenticationFilter(JwtService jwtService,
                                    CustomUserDetailsService userDetailsService,
                                    TokenBlacklistService blacklistService,
-                                   SecurityEventLogger securityEventLogger) {
+                                   SecurityEventLogger securityEventLogger,
+                                   SecurityErrorResponseWriter securityErrorResponseWriter) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
         this.blacklistService = blacklistService;
         this.securityEventLogger = securityEventLogger;
+        this.securityErrorResponseWriter = securityErrorResponseWriter;
     }
 
     @Override
@@ -65,7 +69,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // ── Blacklist check ──────────────────────────────────────────────────
         if (blacklistService.isBlacklisted(token)) {
             securityEventLogger.logBlacklistedTokenAttempt(request.getRequestURI());
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token has been revoked");
+            securityErrorResponseWriter.write(response, HttpStatus.UNAUTHORIZED, "Unauthorized",
+                    "This access token has been revoked (for example after logout). "
+                            + "Please sign in again to obtain a new token.");
             return;
         }
 
@@ -87,11 +93,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         } catch (ExpiredJwtException e) {
             securityEventLogger.logTokenExpired(request.getRequestURI());
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token has expired");
+            securityErrorResponseWriter.write(response, HttpStatus.UNAUTHORIZED, "Unauthorized",
+                    "Your access token has expired. Please sign in again.");
             return;
         } catch (JwtException | IllegalArgumentException e) {
             securityEventLogger.logUnauthorizedAccess(request.getRequestURI(), "Invalid JWT token");
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token");
+            securityErrorResponseWriter.write(response, HttpStatus.UNAUTHORIZED, "Unauthorized",
+                    "The access token is missing, invalid, or corrupt. "
+                            + "Use a Bearer token from /auth/login or refresh.");
             return;
         }
 

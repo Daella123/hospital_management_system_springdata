@@ -36,13 +36,13 @@ public class JwtService {
     @Value("${app.jwt.expiration-ms}")
     private long jwtExpirationMs;
 
-    // ── Key construction ──────────────────────────────────────────────────────
+    // Key construction
 
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
-    // ── Token generation ──────────────────────────────────────────────────────
+    // Token generation
 
     /**
      * Generates a signed JWT for the given {@link UserDetails}.
@@ -68,7 +68,7 @@ public class JwtService {
         return token;
     }
 
-    // ── Token validation ──────────────────────────────────────────────────────
+    //Token validation
 
     /**
      * Returns {@code true} if the token is structurally valid, signature
@@ -89,7 +89,7 @@ public class JwtService {
         return extractExpiration(token).before(new Date());
     }
 
-    // ── Claim extraction ──────────────────────────────────────────────────────
+    //Claim extraction
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);

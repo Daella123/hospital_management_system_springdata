@@ -1,5 +1,7 @@
 package com.daella.hospital_management_system.config;
 
+import com.daella.hospital_management_system.security.ApiAccessDeniedHandler;
+import com.daella.hospital_management_system.security.ApiAuthenticationEntryPoint;
 import com.daella.hospital_management_system.security.CustomUserDetailsService;
 import com.daella.hospital_management_system.security.JwtAuthenticationFilter;
 import com.daella.hospital_management_system.security.OAuth2SuccessHandler;
@@ -49,16 +51,22 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final CustomUserDetailsService userDetailsService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final ApiAuthenticationEntryPoint authenticationEntryPoint;
+    private final ApiAccessDeniedHandler accessDeniedHandler;
 
     @Value("${app.cors.allowed-origins}")
     private String allowedOriginsRaw;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter,
                           CustomUserDetailsService userDetailsService,
-                          OAuth2SuccessHandler oAuth2SuccessHandler) {
+                          OAuth2SuccessHandler oAuth2SuccessHandler,
+                          ApiAuthenticationEntryPoint authenticationEntryPoint,
+                          ApiAccessDeniedHandler accessDeniedHandler) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.userDetailsService = userDetailsService;
         this.oAuth2SuccessHandler = oAuth2SuccessHandler;
+        this.authenticationEntryPoint = authenticationEntryPoint;
+        this.accessDeniedHandler = accessDeniedHandler;
     }
 
     // ── Security filter chain ─────────────────────────────────────────────────
@@ -75,6 +83,11 @@ public class SecurityConfig {
             // Session — stateless; no session is ever created
             .sessionManagement(session ->
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+            // Structured JSON errors (same shape as GlobalExceptionHandler) for 401/403 in the chain
+            .exceptionHandling(ex -> ex
+                    .authenticationEntryPoint(authenticationEntryPoint)
+                    .accessDeniedHandler(accessDeniedHandler))
 
             // Authorization rules
             .authorizeHttpRequests(auth -> auth

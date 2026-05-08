@@ -21,39 +21,32 @@ public class TokenBlacklistService {
 
     private static final Logger log = LoggerFactory.getLogger(TokenBlacklistService.class);
 
-    /**
-     * Map from raw JWT string → time the token expires.
-     * Thread-safe: multiple requests may call blacklist/isBlacklisted concurrently.
-     */
+
     private final ConcurrentHashMap<String, LocalDateTime> blacklistedTokens = new ConcurrentHashMap<>();
 
-    // ── Public API ────────────────────────────────────────────────────────────
+    //Public API
 
-    /**
-     * Adds a token to the blacklist. Call this on logout or forced revocation.
-     *
-     * @param token     the raw JWT string
-     * @param expiresAt the token's original expiry (used for cleanup)
-     */
+    // Adds a token to the blacklist
+
+
     public void blacklist(String token, LocalDateTime expiresAt) {
         blacklistedTokens.put(token, expiresAt);
         log.info("Token blacklisted — total blacklisted: {}", blacklistedTokens.size());
     }
 
-    /**
-     * Returns {@code true} if the token is present in the blacklist.
-     * Called on every authenticated request before the token is trusted.
-     */
+    //Returns true if the token is present in the blacklist.
+
+
     public boolean isBlacklisted(String token) {
         return blacklistedTokens.containsKey(token);
     }
 
-    /** Returns the current number of blacklisted tokens (for audit/reporting). */
+    // Returns the current number of blacklisted tokens
     public int blacklistSize() {
         return blacklistedTokens.size();
     }
 
-    // ── Scheduled cleanup ─────────────────────────────────────────────────────
+    //Scheduled cleanup
 
     /**
      * Removes expired tokens from the blacklist every 30 minutes.
