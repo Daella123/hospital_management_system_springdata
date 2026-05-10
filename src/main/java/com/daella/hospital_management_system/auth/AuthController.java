@@ -44,7 +44,7 @@ public class AuthController {
         this.eventLogger = eventLogger;
     }
 
-    // ── POST /auth/register ───────────────────────────────────────────────────
+    // POST /auth/register
 
     @PostMapping("/register")
     @Operation(
@@ -59,7 +59,7 @@ public class AuthController {
                 .body(ApiResponse.success("User registered successfully", body));
     }
 
-    // ── POST /auth/login ──────────────────────────────────────────────────────
+    // POST /auth/login
 
     @PostMapping("/login")
     @Operation(
@@ -73,7 +73,7 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Login successful", body));
     }
 
-    // ── GET /auth/me ──────────────────────────────────────────────────────────
+    // GET /auth/me
 
     @GetMapping("/me")
     @Operation(
@@ -87,7 +87,7 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(body));
     }
 
-    // ── POST /auth/logout ─────────────────────────────────────────────────────
+    // POST /auth/logout
 
     @PostMapping("/logout")
     @Operation(

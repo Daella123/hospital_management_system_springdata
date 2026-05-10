@@ -181,7 +181,7 @@ public class PrescriptionServiceImpl implements PrescriptionService {
     public PrescriptionResponse toResponse(Prescription p) {
         Appointment appt       = p.getAppointment();
         String      patientName = appt.getPatient().getFirstName() + " " + appt.getPatient().getLastName();
-        String      doctorName  = "Dr. " + appt.getDoctor().getFirstName() + " " + appt.getDoctor().getLastName();
+        String      doctorName  = "Dr. " + appt.getDoctor().getUser().getFirstName() + " " + appt.getDoctor().getUser().getLastName();
 
         List<PrescriptionItemResponse> itemResponses = p.getItems().stream()
                 .map(i -> PrescriptionItemResponse.builder()

@@ -17,9 +17,11 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
 
     // ── Derived Queries ───────────────────────────────────────────────────────
 
-    Optional<Doctor> findByEmail(String email);
+    Optional<Doctor> findByUserId(Long userId);
 
-    boolean existsByEmail(String email);
+    Optional<Doctor> findByUser_Email(String email);
+
+    boolean existsByUser_Email(String email);
 
     boolean existsByLicenseNumber(String licenseNumber);
 
@@ -29,7 +31,8 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
 
     Page<Doctor> findBySpecializationContainingIgnoreCase(String specialization, Pageable pageable);
 
-    Page<Doctor> findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(
+    // Name search navigates through the linked User
+    Page<Doctor> findByUser_FirstNameContainingIgnoreCaseOrUser_LastNameContainingIgnoreCase(
             String firstName, String lastName, Pageable pageable);
 
     // ── JPQL Queries ──────────────────────────────────────────────────────────

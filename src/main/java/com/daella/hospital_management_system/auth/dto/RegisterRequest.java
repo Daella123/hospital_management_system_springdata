@@ -1,17 +1,27 @@
 package com.daella.hospital_management_system.auth.dto;
 
+import com.daella.hospital_management_system.enums.Gender;
 import com.daella.hospital_management_system.enums.RoleName;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.time.LocalDate;
+
 /**
  * Request body for {@code POST /auth/register}.
- * If {@code role} is not provided, the server assigns RECEPTIONIST by default.
+ *
+ * <p>If {@code role} is not provided, the server assigns RECEPTIONIST by default.
+ *
+ * <p>When {@code role = DOCTOR}, the optional doctor-profile fields below are used
+ * to create the linked Doctor entity automatically. A departmentId is strongly
+ * recommended; department can be assigned later by an admin if omitted.
  */
 @Data
 public class RegisterRequest {
+
+    // ── Required for all roles ────────────────────────────────────────────────
 
     @NotBlank(message = "First name is required")
     @Size(max = 50)
@@ -31,7 +41,16 @@ public class RegisterRequest {
 
     /**
      * Optional role. Defaults to RECEPTIONIST when null.
-     * ADMIN can assign any role; regular self-registration uses the default.
      */
     private RoleName role;
+
+    // ── Doctor profile fields (only used when role = DOCTOR) ─────────────────
+
+    private String specialization;
+    private String licenseNumber;
+    private Long   departmentId;
+    private String phone;
+    private Gender gender;
+    private Integer yearsOfExperience;
+    private LocalDate dateOfBirth;
 }

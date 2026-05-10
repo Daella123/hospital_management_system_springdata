@@ -53,10 +53,11 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     /**
      * JPQL — a patient's full appointment history ordered newest first.
-     * Fetches doctor eagerly to avoid N+1 when building responses.
+     * Fetches doctor and the doctor's linked User eagerly to avoid N+1 when building responses.
      */
     @Query("SELECT a FROM Appointment a " +
            "JOIN FETCH a.doctor d " +
+           "JOIN FETCH d.user " +
            "WHERE a.patient.id = :patientId " +
            "ORDER BY a.appointmentDateTime DESC")
     List<Appointment> findPatientHistory(@Param("patientId") Long patientId);

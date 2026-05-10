@@ -3,12 +3,16 @@ package com.daella.hospital_management_system.auth;
 import com.daella.hospital_management_system.auth.dto.AuthResponse;
 import com.daella.hospital_management_system.auth.dto.LoginRequest;
 import com.daella.hospital_management_system.auth.dto.RegisterRequest;
+import com.daella.hospital_management_system.entity.Department;
+import com.daella.hospital_management_system.entity.Doctor;
 import com.daella.hospital_management_system.entity.Role;
 import com.daella.hospital_management_system.entity.User;
 import com.daella.hospital_management_system.enums.RoleName;
 import com.daella.hospital_management_system.exception.DuplicateResourceException;
 import com.daella.hospital_management_system.exception.ResourceNotFoundException;
 import com.daella.hospital_management_system.logging.SecurityEventLogger;
+import com.daella.hospital_management_system.repository.DepartmentRepository;
+import com.daella.hospital_management_system.repository.DoctorRepository;
 import com.daella.hospital_management_system.repository.RoleRepository;
 import com.daella.hospital_management_system.repository.UserRepository;
 import com.daella.hospital_management_system.security.CustomUserDetailsService;
@@ -36,35 +40,44 @@ public class AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
-    private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
+    private final UserRepository       userRepository;
+    private final RoleRepository       roleRepository;
+    private final DoctorRepository     doctorRepository;
+    private final DepartmentRepository departmentRepository;
+    private final PasswordEncoder      passwordEncoder;
+    private final JwtService           jwtService;
     private final AuthenticationManager authenticationManager;
     private final CustomUserDetailsService userDetailsService;
-    private final SecurityEventLogger eventLogger;
+    private final SecurityEventLogger  eventLogger;
 
     public AuthService(UserRepository userRepository,
                        RoleRepository roleRepository,
+                       DoctorRepository doctorRepository,
+                       DepartmentRepository departmentRepository,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService,
                        AuthenticationManager authenticationManager,
                        CustomUserDetailsService userDetailsService,
                        SecurityEventLogger eventLogger) {
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
+        this.userRepository       = userRepository;
+        this.roleRepository       = roleRepository;
+        this.doctorRepository     = doctorRepository;
+        this.departmentRepository = departmentRepository;
+        this.passwordEncoder      = passwordEncoder;
+        this.jwtService           = jwtService;
         this.authenticationManager = authenticationManager;
-        this.userDetailsService = userDetailsService;
-        this.eventLogger = eventLogger;
+        this.userDetailsService   = userDetailsService;
+        this.eventLogger          = eventLogger;
     }
 
-    // ── Register ──────────────────────────────────────────────────────────────
+    // Register
 
     /**
      * Registers a new local user.
-     * Password is hashed with BCrypt before persisting — never stored plain.
+     *
+     * <p>When {@code role = DOCTOR}, a Doctor profile is also created and linked
+     * to the new User. The profile fields are taken from the optional doctor fields
+     * in the request; department is optional at registration time.
      *
      * @throws DuplicateResourceException if the email is already taken
      */
@@ -87,7 +100,7 @@ public class AuthService {
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword())) // BCrypt hash
+                .password(passwordEncoder.encode(request.getPassword()))
                 .provider("LOCAL")
                 .enabled(true)
                 .roles(roles)
@@ -96,13 +109,18 @@ public class AuthService {
         userRepository.save(user);
         log.info("New user registered: '{}'", user.getEmail());
 
+        // When registering as DOCTOR, create the linked Doctor profile automatically.
+        if (roleName == RoleName.DOCTOR) {
+            createDoctorProfile(user, request);
+        }
+
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
         String token = jwtService.generateToken(userDetails);
 
         return buildAuthResponse(token, user, roles);
     }
 
-    // ── Login ─────────────────────────────────────────────────────────────────
+    // Login
 
     /**
      * Authenticates a user with email + password and returns a JWT.
@@ -130,7 +148,7 @@ public class AuthService {
         return buildAuthResponse(token, user, user.getRoles());
     }
 
-    // ── Current user ──────────────────────────────────────────────────────────
+    // Current user
 
     /**
      * Retrieves the currently authenticated user's profile.
@@ -143,7 +161,36 @@ public class AuthService {
         return buildAuthResponse(null, user, user.getRoles());
     }
 
-    // ── Utility ───────────────────────────────────────────────────────────────
+    //Utility
+
+    /**
+     * Creates a Doctor profile linked to an already-persisted User.
+     * Department is optional: if departmentId is provided it is resolved; otherwise
+     * the doctor starts unassigned and an admin can assign them later.
+     */
+    private void createDoctorProfile(User user, RegisterRequest request) {
+        Department department = null;
+        if (request.getDepartmentId() != null) {
+            department = departmentRepository.findById(request.getDepartmentId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Department", "id", request.getDepartmentId()));
+        }
+
+        // User is already managed (just saved), so no cascade conflict.
+        Doctor doctor = Doctor.builder()
+                .user(user)
+                .phone(request.getPhone())
+                .gender(request.getGender())
+                .specialization(request.getSpecialization())
+                .licenseNumber(request.getLicenseNumber())
+                .yearsOfExperience(request.getYearsOfExperience())
+                .dateOfBirth(request.getDateOfBirth())
+                .department(department)
+                .build();
+
+        doctorRepository.save(doctor);
+        log.info("Doctor profile created for user: '{}'", user.getEmail());
+    }
 
     private AuthResponse buildAuthResponse(String token, User user, Set<Role> roles) {
         List<String> roleNames = roles.stream()

@@ -10,12 +10,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Doctor entity.
- * Belongs to one department; has many appointments.
+ * Doctor entity — hospital-specific profile information.
+ *
+ * <p>Identity fields (firstName, lastName, email) live in the linked {@link User}.
+ * This entity holds only what is unique to a doctor's professional profile.
  */
 @Entity
 @Table(name = "doctors", indexes = {
-        @Index(name = "idx_doctor_email",         columnList = "email"),
+        @Index(name = "idx_doctor_user_id",       columnList = "user_id"),
         @Index(name = "idx_doctor_department_id", columnList = "department_id")
 })
 @Getter
@@ -29,14 +31,15 @@ public class Doctor {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "first_name", nullable = false, length = 50)
-    private String firstName;
-
-    @Column(name = "last_name", nullable = false, length = 50)
-    private String lastName;
-
-    @Column(nullable = false, unique = true, length = 100)
-    private String email;
+    /**
+     * The linked User account — single source of truth for name and email.
+     * CascadeType.PERSIST: saving a new Doctor also saves a new User.
+     * CascadeType.MERGE:   updating a Doctor also merges User field changes.
+     * No REMOVE cascade: deletion is handled explicitly in the service.
+     */
+    @OneToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    private User user;
 
     @Column(length = 20)
     private String phone;
@@ -57,8 +60,9 @@ public class Doctor {
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
+    // Nullable: a doctor may be unassigned to a department initially (e.g. during self-registration).
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "department_id", nullable = false)
+    @JoinColumn(name = "department_id")
     private Department department;
 
     @OneToMany(mappedBy = "doctor", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

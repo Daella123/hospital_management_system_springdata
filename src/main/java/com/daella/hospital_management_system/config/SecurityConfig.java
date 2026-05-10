@@ -69,7 +69,7 @@ public class SecurityConfig {
         this.accessDeniedHandler = accessDeniedHandler;
     }
 
-    // ── Security filter chain ─────────────────────────────────────────────────
+    //  Security filter chain
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -92,7 +92,7 @@ public class SecurityConfig {
             // Authorization rules
             .authorizeHttpRequests(auth -> auth
 
-                // ── Public endpoints ────────────────────────────────────────
+                // Public endpoints
                 .requestMatchers(
                         "/auth/**",
                         "/swagger-ui/**",
@@ -109,23 +109,23 @@ public class SecurityConfig {
                         "/graphiql.html"
                 ).permitAll()
 
-                // ── ADMIN-only management ───────────────────────────────────
+                // ADMIN-only management
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
-                // ── Departments — read: all authenticated; write: ADMIN ─────
+                // Departments — read: all authenticated; write: ADMIN
                 .requestMatchers(HttpMethod.GET,    "/api/v1/departments/**").authenticated()
                 .requestMatchers(HttpMethod.POST,   "/api/v1/departments/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT,    "/api/v1/departments/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/departments/**").hasRole("ADMIN")
 
-                // ── Doctors — write: ADMIN; read: ADMIN + DOCTOR ────────────
+                // Doctors — write: ADMIN; read: ADMIN + DOCTOR
                 .requestMatchers(HttpMethod.GET,    "/api/v1/doctors/**")
                         .hasAnyRole("ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST")
                 .requestMatchers(HttpMethod.POST,   "/api/v1/doctors/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT,    "/api/v1/doctors/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/doctors/**").hasRole("ADMIN")
 
-                // ── Patients — write: ADMIN + RECEPTIONIST; read: all ───────
+                // Patients — write: ADMIN + RECEPTIONIST; read: all
                 .requestMatchers(HttpMethod.GET,    "/api/v1/patients/**").authenticated()
                 .requestMatchers(HttpMethod.POST,   "/api/v1/patients/**")
                         .hasAnyRole("ADMIN", "RECEPTIONIST")
@@ -133,7 +133,7 @@ public class SecurityConfig {
                         .hasAnyRole("ADMIN", "RECEPTIONIST")
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/patients/**").hasRole("ADMIN")
 
-                // ── Appointments — schedule: RECEPTIONIST + ADMIN; view: all
+                // Appointments — schedule: RECEPTIONIST + ADMIN; view: all
                 .requestMatchers(HttpMethod.GET,    "/api/v1/appointments/**").authenticated()
                 .requestMatchers(HttpMethod.POST,   "/api/v1/appointments/**")
                         .hasAnyRole("ADMIN", "RECEPTIONIST")
@@ -151,7 +151,7 @@ public class SecurityConfig {
                         .hasAnyRole("ADMIN", "DOCTOR")
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/prescriptions/**").hasRole("ADMIN")
 
-                // ── Medical Inventory — write: ADMIN + NURSE; read: all ─────
+                // Medical Inventory — write: ADMIN + NURSE; read: all
                 .requestMatchers(HttpMethod.GET,    "/api/v1/inventory/**").authenticated()
                 .requestMatchers(HttpMethod.POST,   "/api/v1/inventory/**")
                         .hasAnyRole("ADMIN", "NURSE")
@@ -159,10 +159,10 @@ public class SecurityConfig {
                         .hasAnyRole("ADMIN", "NURSE")
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/inventory/**").hasRole("ADMIN")
 
-                // ── Patient Feedback — all authenticated ─────────────────────
+                //Patient Feedback — all authenticated
                 .requestMatchers("/api/v1/patient-feedbacks/**").authenticated()
 
-                // ── Reports — ADMIN + DOCTOR ─────────────────────────────────
+                //  Reports — ADMIN + DOCTOR
                 .requestMatchers("/api/v1/reports/**").hasAnyRole("ADMIN", "DOCTOR")
 
                 // Any other request must be authenticated
@@ -182,7 +182,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // ── CORS ─────────────────────────────────────────────────────────────────
+    // CORS
 
     /**
      * CORS explanation:
@@ -208,7 +208,7 @@ public class SecurityConfig {
         return source;
     }
 
-    // ── Beans ─────────────────────────────────────────────────────────────────
+    // Beans
 
     @Bean
     public PasswordEncoder passwordEncoder() {
