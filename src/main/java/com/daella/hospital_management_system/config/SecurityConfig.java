@@ -99,8 +99,14 @@ public class SecurityConfig {
                         "/swagger-ui.html",
                         "/v3/api-docs/**",
                         "/api-docs/**",
+                        // GraphQL HTTP endpoint: open to allow schema introspection and
+                        // to return GraphQL-formatted UNAUTHORIZED/FORBIDDEN errors.
+                        // Every resolver is individually guarded by @PreAuthorize.
+                        "/graphql",
                         "/graphql/**",
-                        "/graphiql/**"
+                        "/graphiql",
+                        "/graphiql/**",
+                        "/graphiql.html"
                 ).permitAll()
 
                 // ── ADMIN-only management ───────────────────────────────────

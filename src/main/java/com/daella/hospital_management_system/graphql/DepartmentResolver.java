@@ -6,6 +6,7 @@ import com.daella.hospital_management_system.service.DepartmentService;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import java.util.List;
@@ -22,11 +23,13 @@ public class DepartmentResolver {
 
     // ── Queries ───────────────────────────────────────────────────────────────
 
+    @PreAuthorize("isAuthenticated()")
     @QueryMapping
     public DepartmentResponse getDepartment(@Argument Long id) {
         return departmentService.getDepartmentById(id);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @QueryMapping
     public List<DepartmentResponse> getAllDepartments() {
         return departmentService.getAllDepartments();
@@ -34,16 +37,19 @@ public class DepartmentResolver {
 
     // ── Mutations ─────────────────────────────────────────────────────────────
 
+    @PreAuthorize("hasRole('ADMIN')")
     @MutationMapping
     public DepartmentResponse createDepartment(@Argument Map<String, Object> input) {
         return departmentService.createDepartment(mapToRequest(input));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @MutationMapping
     public DepartmentResponse updateDepartment(@Argument Long id, @Argument Map<String, Object> input) {
         return departmentService.updateDepartment(id, mapToRequest(input));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @MutationMapping
     public Boolean deleteDepartment(@Argument Long id) {
         departmentService.deleteDepartment(id);

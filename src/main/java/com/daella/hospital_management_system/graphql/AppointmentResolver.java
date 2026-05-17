@@ -9,6 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import java.time.LocalDateTime;
@@ -25,11 +26,13 @@ public class AppointmentResolver {
 
     // ── Queries ───────────────────────────────────────────────────────────────
 
+    @PreAuthorize("isAuthenticated()")
     @QueryMapping
     public AppointmentResponse getAppointment(@Argument Long id) {
         return appointmentService.getAppointmentById(id);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @QueryMapping
     public Page<AppointmentResponse> getAllAppointments(@Argument Integer page, @Argument Integer size) {
         return appointmentService.getAllAppointments(PageRequest.of(
@@ -37,6 +40,7 @@ public class AppointmentResolver {
                 size != null ? size : 10));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @QueryMapping
     public Page<AppointmentResponse> getAppointmentsByPatient(
             @Argument Long patientId, @Argument Integer page, @Argument Integer size) {
@@ -44,6 +48,7 @@ public class AppointmentResolver {
                 page != null ? page : 0, size != null ? size : 10));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @QueryMapping
     public Page<AppointmentResponse> getAppointmentsByDoctor(
             @Argument Long doctorId, @Argument Integer page, @Argument Integer size) {
@@ -53,16 +58,19 @@ public class AppointmentResolver {
 
     // ── Mutations ─────────────────────────────────────────────────────────────
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
     @MutationMapping
     public AppointmentResponse createAppointment(@Argument Map<String, Object> input) {
         return appointmentService.createAppointment(mapToRequest(input));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST', 'DOCTOR')")
     @MutationMapping
     public AppointmentResponse updateAppointmentStatus(@Argument Long id, @Argument String status) {
         return appointmentService.updateStatus(id, AppointmentStatus.valueOf(status));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @MutationMapping
     public Boolean cancelAppointment(@Argument Long id) {
         appointmentService.cancelAppointment(id);
