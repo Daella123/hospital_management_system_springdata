@@ -7,12 +7,14 @@ import com.daella.hospital_management_system.dto.response.PagedResponse;
 import com.daella.hospital_management_system.service.DoctorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -37,7 +39,8 @@ public class DoctorController {
     }
 
     @PostMapping
-    @Operation(summary = "Register a new doctor")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Register a new doctor", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<DoctorResponse>> create(@Valid @RequestBody DoctorRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Doctor registered", doctorService.createDoctor(request)));
@@ -96,9 +99,11 @@ public class DoctorController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(
             summary = "Update a doctor's information",
-            description = "Updates the doctor and refreshes the 'doctors' cache entry for this ID."
+            description = "Updates the doctor and refreshes the 'doctors' cache entry for this ID.",
+            security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<ApiResponse<DoctorResponse>> update(
             @PathVariable Long id, @Valid @RequestBody DoctorRequest request) {
@@ -107,9 +112,11 @@ public class DoctorController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(
             summary = "Delete a doctor",
-            description = "Deletes the doctor and evicts the 'doctors' cache entry for this ID."
+            description = "Deletes the doctor and evicts the 'doctors' cache entry for this ID.",
+            security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         doctorService.deleteDoctor(id);

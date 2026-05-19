@@ -9,6 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import java.time.LocalDate;
@@ -26,11 +27,13 @@ public class DoctorResolver {
 
     // ── Queries ───────────────────────────────────────────────────────────────
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'NURSE', 'RECEPTIONIST')")
     @QueryMapping
     public DoctorResponse getDoctor(@Argument Long id) {
         return doctorService.getDoctorById(id);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'NURSE', 'RECEPTIONIST')")
     @QueryMapping
     public Page<DoctorResponse> getAllDoctors(@Argument Integer page, @Argument Integer size) {
         int p = page != null ? page : 0;
@@ -38,6 +41,7 @@ public class DoctorResolver {
         return doctorService.getAllDoctors(PageRequest.of(p, s));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'NURSE', 'RECEPTIONIST')")
     @QueryMapping
     public List<DoctorResponse> getDoctorsByDepartment(@Argument Long departmentId) {
         return doctorService.getDoctorsByDepartment(departmentId);
@@ -45,16 +49,19 @@ public class DoctorResolver {
 
     // ── Mutations ─────────────────────────────────────────────────────────────
 
+    @PreAuthorize("hasRole('ADMIN')")
     @MutationMapping
     public DoctorResponse createDoctor(@Argument Map<String, Object> input) {
         return doctorService.createDoctor(mapToRequest(input));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @MutationMapping
     public DoctorResponse updateDoctor(@Argument Long id, @Argument Map<String, Object> input) {
         return doctorService.updateDoctor(id, mapToRequest(input));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @MutationMapping
     public Boolean deleteDoctor(@Argument Long id) {
         doctorService.deleteDoctor(id);

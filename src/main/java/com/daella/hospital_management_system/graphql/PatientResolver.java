@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import java.time.LocalDate;
@@ -26,11 +27,13 @@ public class PatientResolver {
 
     // ── Queries ───────────────────────────────────────────────────────────────
 
+    @PreAuthorize("isAuthenticated()")
     @QueryMapping
     public PatientResponse getPatient(@Argument Long id) {
         return patientService.getPatientById(id);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @QueryMapping
     public Page<PatientResponse> getAllPatients(
             @Argument Integer page, @Argument Integer size) {
@@ -41,16 +44,19 @@ public class PatientResolver {
 
     // ── Mutations ─────────────────────────────────────────────────────────────
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
     @MutationMapping
     public PatientResponse createPatient(@Argument Map<String, Object> input) {
         return patientService.createPatient(mapToRequest(input));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
     @MutationMapping
     public PatientResponse updatePatient(@Argument Long id, @Argument Map<String, Object> input) {
         return patientService.updatePatient(id, mapToRequest(input));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @MutationMapping
     public Boolean deletePatient(@Argument Long id) {
         patientService.deletePatient(id);

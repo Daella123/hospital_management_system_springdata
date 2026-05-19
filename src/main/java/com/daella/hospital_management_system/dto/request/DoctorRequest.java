@@ -15,6 +15,8 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class DoctorRequest {
 
+    // ── User account fields ───────────────────────────────────────────────────
+
     @NotBlank(message = "First name is required")
     @Size(min = 2, max = 50, message = "First name must be between 2 and 50 characters")
     private String firstName;
@@ -26,6 +28,15 @@ public class DoctorRequest {
     @NotBlank(message = "Email is required")
     @Email(message = "Email must be a valid format")
     private String email;
+
+    /**
+     * Initial password for the doctor's login account.
+     * Required when creating a new doctor; ignored on update.
+     */
+    @Size(min = 8, message = "Password must be at least 8 characters")
+    private String password;
+
+    // ── Doctor profile fields ─────────────────────────────────────────────────
 
     @Pattern(regexp = "^[+]?[0-9]{7,15}$", message = "Phone number must be 7–15 digits, optionally starting with +")
     private String phone;

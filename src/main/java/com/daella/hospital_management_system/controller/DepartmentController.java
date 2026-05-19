@@ -5,6 +5,7 @@ import com.daella.hospital_management_system.dto.response.ApiResponse;
 import com.daella.hospital_management_system.dto.response.DepartmentResponse;
 import com.daella.hospital_management_system.service.DepartmentService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,7 +30,8 @@ public class DepartmentController {
     }
 
     @PostMapping
-    @Operation(summary = "Create a new department")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Create a new department", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<DepartmentResponse>> create(@Valid @RequestBody DepartmentRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Department created", departmentService.createDepartment(request)));
@@ -67,7 +70,8 @@ public class DepartmentController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Update a department")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Update a department", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<DepartmentResponse>> update(
             @PathVariable Long id, @Valid @RequestBody DepartmentRequest request) {
         return ResponseEntity.ok(
@@ -75,7 +79,8 @@ public class DepartmentController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete a department")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Delete a department", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         departmentService.deleteDepartment(id);
         return ResponseEntity.ok(ApiResponse.success("Department deleted", null));

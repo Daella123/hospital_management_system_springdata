@@ -8,12 +8,14 @@ import com.daella.hospital_management_system.enums.InventoryCategory;
 import com.daella.hospital_management_system.service.MedicalInventoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -43,7 +45,8 @@ public class MedicalInventoryController {
     }
 
     @PostMapping
-    @Operation(summary = "Add a new inventory item")
+    @PreAuthorize("hasAnyRole('ADMIN','NURSE')")
+    @Operation(summary = "Add a new inventory item", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<MedicalInventoryResponse>> create(
             @Valid @RequestBody MedicalInventoryRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -103,9 +106,11 @@ public class MedicalInventoryController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','NURSE')")
     @Operation(
             summary = "Update an inventory item",
-            description = "Updates the item and refreshes the 'inventory' cache entry."
+            description = "Updates the item and refreshes the 'inventory' cache entry.",
+            security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<ApiResponse<MedicalInventoryResponse>> update(
             @PathVariable Long id, @Valid @RequestBody MedicalInventoryRequest request) {
@@ -114,10 +119,12 @@ public class MedicalInventoryController {
     }
 
     @PatchMapping("/{id}/stock")
+    @PreAuthorize("hasAnyRole('ADMIN','NURSE')")
     @Operation(
             summary = "Adjust stock (positive = add, negative = remove)",
             description = "Runs under REPEATABLE_READ isolation. Evicts 'inventory' cache entry. " +
-                          "Rolls back if the resulting quantity would drop below zero."
+                          "Rolls back if the resulting quantity would drop below zero.",
+            security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<ApiResponse<MedicalInventoryResponse>> adjustStock(
             @PathVariable Long id, @RequestParam int delta) {
@@ -126,9 +133,11 @@ public class MedicalInventoryController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(
             summary = "Remove an inventory item",
-            description = "Deletes the item and evicts the 'inventory' cache entry."
+            description = "Deletes the item and evicts the 'inventory' cache entry.",
+            security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         inventoryService.deleteItem(id);

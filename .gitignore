@@ -33,7 +33,8 @@ build/
 .vscode/
 application.properties
 application.yml
-applicatio_dev.yml
-applicatio_prod.yml
+application-dev.yml
+application-prod.yml
 prompt.md
 springDataRequirement.md
+promptsecurity.md

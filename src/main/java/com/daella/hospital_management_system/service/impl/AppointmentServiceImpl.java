@@ -223,7 +223,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     public AppointmentResponse toResponse(Appointment a) {
         String patientName = a.getPatient().getFirstName() + " " + a.getPatient().getLastName();
-        String doctorName  = "Dr. " + a.getDoctor().getFirstName() + " " + a.getDoctor().getLastName();
+        String doctorName  = "Dr. " + a.getDoctor().getUser().getFirstName() + " " + a.getDoctor().getUser().getLastName();
         String deptName    = a.getDoctor().getDepartment() != null
                 ? a.getDoctor().getDepartment().getName() : null;
 

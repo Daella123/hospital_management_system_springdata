@@ -103,7 +103,7 @@ public class PatientFeedbackServiceImpl implements PatientFeedbackService {
         String patientName = f.getPatient().getFirstName() + " " + f.getPatient().getLastName();
         Long doctorId = f.getDoctor() != null ? f.getDoctor().getId() : null;
         String doctorName = f.getDoctor() != null
-                ? "Dr. " + f.getDoctor().getFirstName() + " " + f.getDoctor().getLastName() : null;
+                ? "Dr. " + f.getDoctor().getUser().getFirstName() + " " + f.getDoctor().getUser().getLastName() : null;
 
         return PatientFeedbackResponse.builder()
                 .id(f.getId())
